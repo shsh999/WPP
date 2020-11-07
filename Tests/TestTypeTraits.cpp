@@ -18,17 +18,6 @@ TEST_CASE("isStringLiteral", "[TypeTraits]") {
     STATIC_REQUIRE_FALSE(IsStringLiteral<decltype(L"asd")>);
 }
 
-TEST_CASE("remove_cvref_t", "[TypeTraits]") {  
-    STATIC_REQUIRE(std::is_same_v<remove_cvref_t<const volatile int&>, int>);
-    STATIC_REQUIRE(std::is_same_v<remove_cvref_t<const int>, int>);
-    STATIC_REQUIRE(std::is_same_v<remove_cvref_t<volatile int>, int>);
-    STATIC_REQUIRE(std::is_same_v<remove_cvref_t<int&>, int>);
-    STATIC_REQUIRE(std::is_same_v<remove_cvref_t<const int(&)[5]>, int[5]>);
-
-    STATIC_REQUIRE_FALSE(std::is_same_v<remove_cvref_t<const char*>, char*>);
-}
-
-
 TEST_CASE("SimpleTraceItem", "[TypeTraits]") {
 
     struct SimpleTraceItem {

@@ -84,15 +84,41 @@ TEST_CASE("Argument types", "[Args]") {
     CHECK_TYPE("{:c}", char, CharItem);
     CHECK_TYPE("{:c}", wchar_t, WCharItem);
 
+    CHECK_TYPE("{}", char*, StringItem);
     CHECK_TYPE("{:s}", char*, StringItem);
     CHECK_TYPE("{:p}", char*, PointerItem);
     CHECK_TYPE("{:x}", char*, HexBufferItem);
     CHECK_TYPE("{:xd}", char*, HexDumpItem);
 
+    CHECK_TYPE("{}", char[], StringItem);
+    CHECK_TYPE("{:s}", char[], StringItem);
+    CHECK_TYPE("{:p}", char[], PointerItem);
+    CHECK_TYPE("{:x}", char[], HexBufferItem);
+    CHECK_TYPE("{:xd}", char[], HexDumpItem);
+
+    CHECK_TYPE("{}", char[10], StringItem);
+    CHECK_TYPE("{:s}", char[10], StringItem);
+    CHECK_TYPE("{:p}", char[10], PointerItem);
+    CHECK_TYPE("{:x}", char[10], HexBufferItem);
+    CHECK_TYPE("{:xd}", char[10], HexDumpItem);
+
+    CHECK_TYPE("{}", wchar_t*, WStringItem);
     CHECK_TYPE("{:s}", wchar_t*, WStringItem);
     CHECK_TYPE("{:p}", wchar_t*, PointerItem);
     CHECK_TYPE("{:x}", wchar_t*, HexBufferItem);
     CHECK_TYPE("{:xd}", wchar_t*, HexDumpItem);
+
+    CHECK_TYPE("{}", wchar_t[], WStringItem);
+    CHECK_TYPE("{:s}", wchar_t[], WStringItem);
+    CHECK_TYPE("{:p}", wchar_t[], PointerItem);
+    CHECK_TYPE("{:x}", wchar_t[], HexBufferItem);
+    CHECK_TYPE("{:xd}", wchar_t[], HexDumpItem);
+    
+    CHECK_TYPE("{}", wchar_t[10], WStringItem);
+    CHECK_TYPE("{:s}", wchar_t[10], WStringItem);
+    CHECK_TYPE("{:p}", wchar_t[10], PointerItem);
+    CHECK_TYPE("{:x}", wchar_t[10], HexBufferItem);
+    CHECK_TYPE("{:xd}", wchar_t[10], HexDumpItem);
 
     CHECK_BAD_FORMAT("{:d}", char*);
 

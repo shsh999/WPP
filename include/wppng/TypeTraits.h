@@ -19,12 +19,6 @@ static constexpr bool IsStringLiteral = std::is_same_v<
     T, std::add_lvalue_reference_t<const char[std::extent_v<std::remove_reference_t<T>>]>>;
 
 /**
- * A port of c++20 std::remove_cvref_t.
- */
-template<typename T>
-using remove_cvref_t = typename std::remove_cv_t<std::remove_reference_t<T>>;
-
-/**
  * Checks that the given type is a vaild "simple" trace item:
  * - Has a `const void* getPtr()` function
  * - Has a `size_t getSize()` function.
