@@ -121,7 +121,4 @@ TEST_CASE("Argument types", "[Args]") {
     CHECK_TYPE("{:xd}", wchar_t[10], HexDumpItem);
 
     CHECK_BAD_FORMAT("{:d}", char*);
-
-    struct NotSupported {};
-    CHECK_TYPE("{}", NotSupported, TypeDoesNotSupportFormatting);
 }

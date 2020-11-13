@@ -46,12 +46,10 @@ constexpr bool annotateFlags() {
 template<typename Format, typename TupleType>
 struct ArgChecker;
 
-enum class ArgCheckResult { Success, InvalidFormat, BadType };
+enum class ArgCheckResult { Success, InvalidFormat };
 template<typename... Args>
 constexpr ArgCheckResult makeArgCheckStatus() {
-    if constexpr ((std::is_same_v<Args, wpp::internal::TypeDoesNotSupportFormatting> || ...)) {
-        return ArgCheckResult::BadType;
-    } else if constexpr ((std::is_same_v<Args, wpp::InvalidFormatItem> || ...)) {
+    if constexpr ((std::is_same_v<Args, wpp::InvalidFormatItem> || ...)) {
         return ArgCheckResult::InvalidFormat;
     } else {
         return ArgCheckResult::Success;
@@ -124,8 +122,6 @@ constexpr __forceinline void wppNGTraceNew(std::index_sequence<indices...>, Trac
                 std::make_index_sequence<FormatInfo::count()>());                               \
         static_assert(argCheckResult != ::wpp::internal::ArgCheckResult::InvalidFormat,         \
                       "Argument does not support the given extended format specification!");    \
-        static_assert(argCheckResult != ::wpp::internal::ArgCheckResult::BadType,               \
-                      "Argument does not support formatting!");                                 \
         static_assert(argCheckResult == ::wpp::internal::ArgCheckResult::Success,               \
                       "Unexpected argument check result!");                                     \
     }

@@ -18,6 +18,58 @@ template<typename T>
 static constexpr bool IsStringLiteral = std::is_same_v<
     T, std::add_lvalue_reference_t<const char[std::extent_v<std::remove_reference_t<T>>]>>;
 
+namespace helper {
+template<typename T>
+struct RecursiveDecayHelper {
+    using type = std::decay_t<T>;
+};
+
+template<typename T>
+struct RecursiveDecayHelper<T*> {
+    using type = std::add_pointer_t<typename RecursiveDecayHelper<std::decay_t<T>>::type>;
+};
+
+template<typename T>
+struct RecursiveDecayHelper<T* const> {
+    using type = std::add_pointer_t<typename RecursiveDecayHelper<std::decay_t<T>>::type>;
+};
+
+template<typename T>
+struct RecursiveDecayHelper<T* volatile> {
+    using type = std::add_pointer_t<typename RecursiveDecayHelper<std::decay_t<T>>::type>;
+};
+
+template<typename T>
+struct RecursiveDecayHelper<T* const volatile> {
+    using type = std::add_pointer_t<typename RecursiveDecayHelper<std::decay_t<T>>::type>;
+};
+
+template<typename T>
+struct RecursiveDecayHelper<T&> {
+    using type = typename RecursiveDecayHelper<std::decay_t<T>>::type;
+};
+
+template<typename T>
+struct RecursiveDecayHelper<T&&> {
+    using type = typename RecursiveDecayHelper<std::decay_t<T>>::type;
+};
+
+template<typename T, std::size_t N>
+struct RecursiveDecayHelper<T[N]> {
+    using type = std::add_pointer_t<typename RecursiveDecayHelper<std::decay_t<T>>::type>;
+};
+
+template<typename T>
+struct RecursiveDecayHelper<T[]> {
+    using type = std::add_pointer_t<typename RecursiveDecayHelper<std::decay_t<T>>::type>;
+};
+
+}  // namespace helper
+
+template<typename T>
+using RecursiveDecay = typename helper::RecursiveDecayHelper<T>::type;
+
+
 /**
  * Checks that the given type is a vaild "simple" trace item:
  * - Has a `const void* getPtr()` function
