@@ -20,31 +20,31 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\wppng\Md5.h">
+    <ClInclude Include="..\include\wpp\Md5.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\wppng\PathUtils.h">
+    <ClInclude Include="..\include\wpp\PathUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\wppng\String.h">
+    <ClInclude Include="..\include\wpp\String.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\wppng\Trace.h">
+    <ClInclude Include="..\include\wpp\Trace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\wppng\TraceItems.h">
+    <ClInclude Include="..\include\wpp\TraceItems.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\wppng\TraceProvider.h">
+    <ClInclude Include="..\include\wpp\TraceProvider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\wppng\TypeTraits.h">
+    <ClInclude Include="..\include\wpp\TypeTraits.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\wppng\ParseUtils.h">
+    <ClInclude Include="..\include\wpp\ParseUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\wppng\DefaultTracing.h">
+    <ClInclude Include="..\include\wpp\DefaultTracing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

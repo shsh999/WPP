@@ -1,7 +1,7 @@
 #include "catch.hpp"
 
-#include "wppng/TypeTraits.h"
-#include "wppng/TraceItems.h"
+#include "wpp/TypeTraits.h"
+#include "wpp/TraceItems.h"
 
 using namespace wpp::internal;
 using namespace wpp;

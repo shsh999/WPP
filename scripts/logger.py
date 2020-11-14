@@ -8,8 +8,8 @@ class Logger(logging.LoggerAdapter):
     """
     This is a logger adapter class supporting a trace info as a context - allowing to specify in which trace an error occurs.
     """
-    LOGGER_NAME = 'wpp-ng-logger'
-    def __init__(self, logger, extra={}):
+    LOGGER_NAME = 'wpp-logger'
+    def __init__(self, extra={}):
         super(Logger, self).__init__(logging.getLogger(Logger.LOGGER_NAME), extra=extra)
         self.trace_context = None
     
@@ -32,7 +32,7 @@ class Logger(logging.LoggerAdapter):
     
 
 # This is the global logger object that should be used to log events.
-logger = Logger(logging.getLogger('wpp-ng-logger'))
+logger = Logger()
 
 def setup_logger(verbose):
     """

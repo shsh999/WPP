@@ -1,8 +1,8 @@
 #include "catch.hpp"
 
-#include "wppng/String.h"
-#include "wppng/ParseUtils.h"
-#include "wppng/TraceItems.h"
+#include "wpp/String.h"
+#include "wpp/ParseUtils.h"
+#include "wpp/TraceItems.h"
 
 #define CHECK_ARGUMENT_COUNT(str, value)                                \
     do {                                                                \
@@ -41,14 +41,14 @@ TEST_CASE("Argument count", "[Args]") {
 
 #define CHECK_STATUS(str, statusValue)                            \
     do {                                                          \
-        __WPP_NG_STRING_MAKER(FormatType, str);                   \
+        __WPP_STRING_MAKER(FormatType, str);                   \
         using FormatInfo = decltype(getFormatInfo<FormatType>()); \
         STATIC_REQUIRE(FormatInfo::status() == statusValue);      \
     } while (0)
 
 #define CHECK_TYPE(str, ArgType, TraceType)                                                      \
     do {                                                                                         \
-        __WPP_NG_STRING_MAKER(FormatType, str);                                                  \
+        __WPP_STRING_MAKER(FormatType, str);                                                  \
         using FormatInfo = decltype(getFormatInfo<FormatType>());                                \
         STATIC_REQUIRE(FormatInfo::status() == ArgumentParseStatus::Success);                    \
         STATIC_REQUIRE(                                                                          \

@@ -1,5 +1,5 @@
 """
-This is the wpp-ng equivalent of tracepdb.exe, used to generate TMF files from PDBs of wpp-ng projets.
+This is the wpp++ equivalent of tracepdb.exe, used to generate TMF files from PDBs of wpp++ projets.
 """
 import argparse
 import os
@@ -12,7 +12,7 @@ from logger import setup_logger, logger
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description='''This is the wpp-ng equivalent of tracepdb.exe, used to generate TMF files from PDBs of wpp-ng projects.''')
+    parser = argparse.ArgumentParser(description='''This is the wpp++ equivalent of tracepdb.exe, used to generate TMF files from PDBs of wpp++ projects.''')
     parser.add_argument('file', type=str, help='The path to the pdb file containing formatting instructions.')
     
     # Either create a tmf file for each trace or a single tmf file contating all the traces.
@@ -51,6 +51,8 @@ def main():
     else:
         output_file = args.output_file
         logger.info('Generating single trace file: "%s"', output_file)
+        if os.path.exists(output_file):
+            logger.warning('The file already exists, overriding...')
         generate_tmf_file_for_multiple_traces(output_file, pdb_path, traces)
     
     return 0

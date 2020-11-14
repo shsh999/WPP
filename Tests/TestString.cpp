@@ -1,6 +1,6 @@
 #include "catch.hpp"
 
-#include "wppng/String.h"
+#include "wpp/String.h"
 
 using namespace wpp::internal;
 
@@ -47,15 +47,15 @@ TEST_CASE("String concatanation", "[String]") {
 }
 
 TEST_CASE("Fixed strings", "[String]") {
-    __WPP_NG_STRING_MAKER(WordType, "WORD");
+    __WPP_STRING_MAKER(WordType, "WORD");
     STATIC_REQUIRE(WordType::value() == "WORD");
 
-    __WPP_NG_STRING_MAKER(WormType, "WORM");
+    __WPP_STRING_MAKER(WormType, "WORM");
     STATIC_REQUIRE(WormType::value() == "WORM");
 
     STATIC_REQUIRE(!std::is_same_v<WormType, WordType>);
 
-    __WPP_NG_STRING_MAKER(WordType2, "WORD");
+    __WPP_STRING_MAKER(WordType2, "WORD");
     STATIC_REQUIRE(WordType2::value() == "WORD");
 
     STATIC_REQUIRE(std::is_same_v<WordType, WordType2>);

@@ -9,7 +9,7 @@ namespace wpp {
 
 /**
  * A fixed constexpr string, whose value is the concatenation of its character template arguments.
- * 
+ *
  * For example, FormatString<'a', 'b', 'c'>::value() == "abc"
  */
 template<char... chars>
@@ -46,7 +46,6 @@ struct TrivialTraceItem {
 
     T value;
 };
-
 
 /**
  * A convenience base-class for trace items holding a reference for an existing type.
@@ -149,7 +148,7 @@ constexpr bool isValidFloatFormat(std::string_view format) {
 
 }  // namespace internal
 
-#define WPP_NG_SPECIALIZE_LOGGER(RealType, Tag, formatValidationFuncion)                \
+#define WPP_SPECIALIZE_LOGGER(RealType, Tag, formatValidationFuncion)                   \
     template<typename Format>                                                           \
     struct TraceItemMaker<RealType, Format,                                             \
                           std::enable_if_t<formatValidationFuncion(Format::value())>> { \
@@ -158,50 +157,50 @@ constexpr bool isValidFloatFormat(std::string_view format) {
         }                                                                               \
     }
 
-#define WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(RealType, Tag) \
-    WPP_NG_SPECIALIZE_LOGGER(RealType, Tag, internal::isValidIntegerFormat)
+#define WPP_SPECIALIZE_INTEGRAL_LOGGER(RealType, Tag) \
+    WPP_SPECIALIZE_LOGGER(RealType, Tag, internal::isValidIntegerFormat)
 
 struct Int8Item : TrivialTraceItem<int8_t> {};
-WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(int8_t, Int8Item);
+WPP_SPECIALIZE_INTEGRAL_LOGGER(int8_t, Int8Item);
 
 struct Int16Item : TrivialTraceItem<int16_t> {};
-WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(int16_t, Int16Item);
+WPP_SPECIALIZE_INTEGRAL_LOGGER(int16_t, Int16Item);
 
 struct Int32Item : TrivialTraceItem<int32_t> {};
-WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(int32_t, Int32Item);
+WPP_SPECIALIZE_INTEGRAL_LOGGER(int32_t, Int32Item);
 
 struct Int64Item : TrivialTraceItem<int64_t> {};
-WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(int64_t, Int64Item);
+WPP_SPECIALIZE_INTEGRAL_LOGGER(int64_t, Int64Item);
 
 struct UInt8Item : TrivialTraceItem<uint8_t> {};
-WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(uint8_t, UInt8Item);
+WPP_SPECIALIZE_INTEGRAL_LOGGER(uint8_t, UInt8Item);
 
 struct UInt16Item : TrivialTraceItem<uint16_t> {};
-WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(uint16_t, UInt16Item);
+WPP_SPECIALIZE_INTEGRAL_LOGGER(uint16_t, UInt16Item);
 
 struct UInt32Item : TrivialTraceItem<uint32_t> {};
-WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(uint32_t, UInt32Item);
+WPP_SPECIALIZE_INTEGRAL_LOGGER(uint32_t, UInt32Item);
 
 struct UInt64Item : TrivialTraceItem<uint64_t> {};
-WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(uint64_t, UInt64Item);
+WPP_SPECIALIZE_INTEGRAL_LOGGER(uint64_t, UInt64Item);
 
 struct ByteItem : TrivialTraceItem<std::byte> {};
-WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(std::byte, ByteItem);
+WPP_SPECIALIZE_INTEGRAL_LOGGER(std::byte, ByteItem);
 
 struct PtrDiffItem : TrivialTraceItem<ptrdiff_t> {};
-WPP_NG_SPECIALIZE_LOGGER(ptrdiff_t, PtrDiffItem, internal::isValidPointerSizedIntegerFormat);
+WPP_SPECIALIZE_LOGGER(ptrdiff_t, PtrDiffItem, internal::isValidPointerSizedIntegerFormat);
 
 struct SizeTItem : TrivialTraceItem<size_t> {};
-WPP_NG_SPECIALIZE_LOGGER(size_t, SizeTItem, internal::isValidPointerSizedIntegerFormat);
+WPP_SPECIALIZE_LOGGER(size_t, SizeTItem, internal::isValidPointerSizedIntegerFormat);
 
 struct FloatItem : TrivialTraceItem<float> {};
-WPP_NG_SPECIALIZE_LOGGER(float, FloatItem, internal::isValidFloatFormat);
+WPP_SPECIALIZE_LOGGER(float, FloatItem, internal::isValidFloatFormat);
 
 struct DoubleItem : TrivialTraceItem<double> {};
-WPP_NG_SPECIALIZE_LOGGER(double, DoubleItem, internal::isValidFloatFormat);
+WPP_SPECIALIZE_LOGGER(double, DoubleItem, internal::isValidFloatFormat);
 
 struct LongDoubleItem : TrivialTraceItem<long double> {};
-WPP_NG_SPECIALIZE_LOGGER(long double, LongDoubleItem, internal::isValidFloatFormat);
+WPP_SPECIALIZE_LOGGER(long double, LongDoubleItem, internal::isValidFloatFormat);
 
 struct GuidItem : ReferenceTraceItem<GUID> {};
 
@@ -213,15 +212,16 @@ struct TraceItemMaker<GUID> {
 };
 
 struct CharItem : TrivialTraceItem<char> {};
-WPP_NG_SPECIALIZE_LOGGER(char, CharItem, internal::isValidCharacterFormat);
+WPP_SPECIALIZE_LOGGER(char, CharItem, internal::isValidCharacterFormat);
 
 struct WCharItem : TrivialTraceItem<wchar_t> {};
-WPP_NG_SPECIALIZE_LOGGER(wchar_t, WCharItem, internal::isValidCharacterFormat);
+WPP_SPECIALIZE_LOGGER(wchar_t, WCharItem, internal::isValidCharacterFormat);
 
 struct PointerItem : TrivialTraceItem<const void*> {};
 
 template<typename T, typename Format>
-struct TraceItemMaker<T*, Format, std::enable_if_t<internal::isValidPointerFormat(Format::value())>> {
+struct TraceItemMaker<T*, Format,
+                      std::enable_if_t<internal::isValidPointerFormat(Format::value())>> {
     static constexpr auto make(const T* ptr) {
         return PointerItem{static_cast<const void*>(ptr)};
     }

@@ -1,6 +1,6 @@
 #include "catch.hpp"
 
-#include "wppng/PathUtils.h"
+#include "wpp/PathUtils.h"
 
 TEST_CASE("Path", "[Paths]") {
     STATIC_REQUIRE(wpp::internal::getBaseDirectoryIndex("file.cpp") == 0);

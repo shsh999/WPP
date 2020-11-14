@@ -22,7 +22,7 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{648b37d7-9270-44a1-b0b5-ea58abff5d40}</ProjectGuid>
-    <RootNamespace>WppNG</RootNamespace>
+    <RootNamespace>Example</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -164,15 +164,15 @@
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\wppng\DefaultTracing.h" />
-    <ClInclude Include="..\include\wppng\ParseUtils.h" />
-    <ClInclude Include="..\include\wppng\Md5.h" />
-    <ClInclude Include="..\include\wppng\PathUtils.h" />
-    <ClInclude Include="..\include\wppng\String.h" />
-    <ClInclude Include="..\include\wppng\Trace.h" />
-    <ClInclude Include="..\include\wppng\TraceItems.h" />
-    <ClInclude Include="..\include\wppng\TraceProvider.h" />
-    <ClInclude Include="..\include\wppng\TypeTraits.h" />
+    <ClInclude Include="..\include\wpp\DefaultTracing.h" />
+    <ClInclude Include="..\include\wpp\ParseUtils.h" />
+    <ClInclude Include="..\include\wpp\Md5.h" />
+    <ClInclude Include="..\include\wpp\PathUtils.h" />
+    <ClInclude Include="..\include\wpp\String.h" />
+    <ClInclude Include="..\include\wpp\Trace.h" />
+    <ClInclude Include="..\include\wpp\TraceItems.h" />
+    <ClInclude Include="..\include\wpp\TraceProvider.h" />
+    <ClInclude Include="..\include\wpp\TypeTraits.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

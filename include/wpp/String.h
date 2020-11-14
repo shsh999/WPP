@@ -118,7 +118,7 @@ static auto makeFixedString(std::index_sequence<Ixs...>) {
  * Generates a type named `name` whose static `::value()` function returns a string view of the
  * given string literal. `name` must be a valid class name, and `str` must be a string literal.
  */
-#define __WPP_NG_STRING_MAKER(name, str)                                                 \
-    static constexpr const auto ___wpp_ng_trace_str_##name = str;                        \
-    using name = decltype(::wpp::internal::makeFixedString<&___wpp_ng_trace_str_##name>( \
+#define __WPP_STRING_MAKER(name, str)                                                 \
+    static constexpr const auto ___wpp_trace_str_##name = str;                        \
+    using name = decltype(::wpp::internal::makeFixedString<&___wpp_trace_str_##name>( \
         std::make_index_sequence<sizeof(str) - 1>()))

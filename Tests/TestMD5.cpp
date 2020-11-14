@@ -1,7 +1,7 @@
 #pragma once
 #include "catch.hpp"
 
-#include "wppng/Md5.h"
+#include "wpp/Md5.h"
 
 using namespace wpp::internal::md5;
 

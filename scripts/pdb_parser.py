@@ -14,7 +14,7 @@ from trace_info import TraceInfo
 
 def md5_to_uuid(hash_result):
     """
-    Convert an md hash to a UUID3 value the same way as wpp-ng c++ code.
+    Convert an md hash to a UUID3 value the same way as the c++ code.
     """
     parts = struct.unpack_from('<IHH2s6s', hash_result)
     result = struct.pack('>IHH2s6s', parts[0], parts[1], (parts[2] & 0x0fff) | 0x3000, parts[3], parts[4])

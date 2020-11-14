@@ -16,7 +16,7 @@ def write_tmf_trace(tmf_file, pdb_path, trace):
         trace.file_name.replace('.', '_') + str(trace.line),
         trace.get_legacy_wpp_format(),
         'TRACE_LEVEL_{}'.format(trace.level.upper()),
-        'WPP_NG_FLAG_{}'.format(trace.flag),
+        'WPP_FLAG_{}'.format(trace.flag),
         trace.func.replace(' ', '-')
     ))
     
