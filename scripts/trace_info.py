@@ -203,6 +203,35 @@ class HexDumpItem(LegacyTraceItem):
         return 'ItemHEXDump'
 
 
+class FloatingPointItem(LegacyTraceItem):
+    @classmethod
+    def get_legacy_format(cls, format_spec):
+        if not format_spec:
+            format_spec = 'f'
+        if format_spec.lower() not in ('a', 'e', 'f', 'g'):
+            return super(FloatingPointItem, cls).get_legacy_format(format_spec)
+        return format_spec
+
+
+class FloatItem(FloatingPointItem):
+    @classmethod
+    def get_legacy_item_name(cls):
+        return 'ItemFloat'
+
+
+class DoubleItem(FloatingPointItem):
+    @classmethod
+    def get_legacy_item_name(cls):
+        return 'ItemDouble'
+
+
+class LongDoubleItem(FloatingPointItem):
+    @classmethod
+    def get_legacy_item_name(cls):
+        return 'ItemLongDouble'
+
+
+
 TRACE_ITEM_TYPES = {
     cls.__name__: cls
     for cls in (
@@ -210,6 +239,7 @@ TRACE_ITEM_TYPES = {
         Int8Item, Int16Item, Int32Item, Int64Item,
         UInt8Item, UInt16Item, UInt32Item, UInt64Item,
         SizeTItem, PtrDiffItem,
+        FloatItem, DoubleItem, LongDoubleItem,
         PointerItem, GuidItem, HexBufferItem, HexDumpItem
     )
 }

@@ -135,7 +135,7 @@ def load_module(handle, pdb_path):
         dbgHelp.SymUnloadModule64(handle, base_address)
 
 
-def extrace_trace_info(pdb_path):
+def extract_trace_info(pdb_path):
     """
     Extract trace information from the annotations in the given PDB file.
 

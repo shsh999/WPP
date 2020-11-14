@@ -1,7 +1,12 @@
+/**
+ * This is an example "default" trace definition file for a WPP-like experience - a global trace
+ * provider used with trace macros all over the program.
+ */
 #include <optional>
 #include "Trace.h"
 
 namespace wpp {
+
 inline std::optional<TraceProvider> g_wppNgDefaultProvider = std::nullopt;
 
 void wppInitTraces(const GUID& controlGuid) {
@@ -30,11 +35,12 @@ struct WppTraceGuard {
 
 };  // namespace wpp
 
-#define WPP_NG_TRACE_FLAG_LEVEL(flag, level, fmt, ...)                                           \
-    do {                                                                                         \
-        if (::wpp::g_wppNgDefaultProvider) {                                         \
-            WPP_NG_DO_TRACE((*::wpp::g_wppNgDefaultProvider), flag, level, fmt, __VA_ARGS__); \
-        }                                                                                        \
+#define WPP_NG_TRACE_FLAG_LEVEL(flag, level, fmt, ...)                          \
+    do {                                                                        \
+        if (::wpp::g_wppNgDefaultProvider) {                                    \
+            auto& ___wpp_ng_provider = *::wpp::g_wppNgDefaultProvider;          \
+            WPP_NG_DO_TRACE(___wpp_ng_provider, flag, level, fmt, __VA_ARGS__); \
+        }                                                                       \
     } while (0)
 
 #define WPP_NG_TRACE_INFO(fmt, ...) \

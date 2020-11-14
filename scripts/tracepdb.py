@@ -6,7 +6,7 @@ import os
 import sys
 
 from tmf_file import generate_tmf_file, generate_tmf_file_for_multiple_traces
-from pdb_parser import extrace_trace_info
+from pdb_parser import extract_trace_info
 
 from logger import setup_logger, logger
 
@@ -34,7 +34,7 @@ def main():
         logger.error('Invalid PDB path: "{}"!'.format(pdb_path))
         return 1
 
-    traces = extrace_trace_info(pdb_path)
+    traces = extract_trace_info(pdb_path)
 
     logger.info('Found {} traces!'.format(len(traces)))
 

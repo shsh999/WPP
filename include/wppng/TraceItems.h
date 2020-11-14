@@ -7,6 +7,11 @@
 
 namespace wpp {
 
+/**
+ * A fixed constexpr string, whose value is the concatenation of its character template arguments.
+ * 
+ * For example, FormatString<'a', 'b', 'c'>::value() == "abc"
+ */
 template<char... chars>
 using FormatString = internal::FixedConstexprString<chars...>;
 
@@ -14,14 +19,8 @@ using FormatString = internal::FixedConstexprString<chars...>;
  * This template is used in order to provide a customization interface for trace formats.
  * See examples in this file.
  */
-template<typename T, typename Format, typename Enable = void>
+template<typename T, typename Format = FormatString<>, typename Enable = void>
 struct TraceItemMaker;
-
-/**
- * This struct should be returned from `make` functions in order to indicate that the given format
- * is not supported.
- */
-struct InvalidFormatItem {};
 
 /**
  * This structure is a pair containing trace information, used by complex trace items to return
@@ -32,21 +31,11 @@ struct TracePair {
     size_t size;
 };
 
+/**
+ * A convenience base-class for trace items holding cheap to copy data.
+ */
 template<typename T>
-constexpr auto makeTracePairs(const T& t) {
-    if constexpr (internal::IsSimpleTraceItem<T>::value) {
-        return std::make_tuple(t.getPtr(), t.getSize());
-    } else if constexpr (internal::IsComplexTraceItem<T>::value) {
-        return std::apply(
-            [](auto&&... args) { return std::tuple_cat(std::make_tuple(args.ptr, args.size)...); },
-            t.makeTracePairs());
-    } else {
-        static_assert(false, "Bad trace item type!");
-    }
-}
-
-template<typename T>
-struct PODTraceItem {
+struct TrivialTraceItem {
     constexpr const void* getPtr() const noexcept {
         return &value;
     }
@@ -58,6 +47,35 @@ struct PODTraceItem {
     T value;
 };
 
+
+/**
+ * A convenience base-class for trace items holding a reference for an existing type.
+ */
+template<typename T>
+using ReferenceTraceItem = TrivialTraceItem<const T&>;
+
+/**
+ * A convenience base-class for trace items that are traced as a size followed by the data.
+ */
+struct SizeAndDataTraceItem {
+    constexpr SizeAndDataTraceItem(const void* data, uint16_t size) : ptr(data), size(size) {
+        // Intentionally left blank.
+    }
+
+    constexpr auto makeTracePairs() const {
+        return std::make_tuple<TracePair, TracePair>({&size, sizeof(size)}, {ptr, size});
+    }
+
+private:
+    const void* const ptr;
+    const uint16_t size;
+};
+
+namespace internal {
+
+/**
+ * Checks that the given format is a valid integer format.
+ */
 constexpr bool isValidIntegerFormat(std::string_view format) {
     if (format.size() == 0) {
         return true;
@@ -80,143 +98,148 @@ constexpr bool isValidIntegerFormat(std::string_view format) {
     }
 }
 
-#define WPP_NG_SPECIALIZE_LOGGER(RealType, Tag, formatValidationFuncion)                 \
-    template<typename Format>                                                            \
+/**
+ * Checks whether the given format is a valid character format.
+ */
+constexpr bool isValidCharacterFormat(std::string_view format) {
+    return format == "c" || isValidIntegerFormat(format);
+}
+
+/**
+ * Checks whether the given format is a valid size_t/ptrdiff_t format: a format starting with 'z'
+ * followed by a valid integer format.
+ */
+constexpr bool isValidPointerSizedIntegerFormat(std::string_view format) {
+    return format.size() > 0 && format[0] == 'z' && isValidIntegerFormat(format.substr(1));
+}
+
+/**
+ * Checks whether the given format is a valid pointer format.
+ */
+constexpr bool isValidPointerFormat(std::string_view format) {
+    return format.size() == 0 || format == "p";
+}
+
+/**
+ * Checks whether the given format is a valid floating-point number format.
+ */
+constexpr bool isValidFloatFormat(std::string_view format) {
+    if (format.size() == 0) {
+        return true;
+    }
+
+    if (format.size() != 1) {
+        return false;
+    }
+
+    switch (format[0]) {
+        case 'e':
+        case 'E':
+        case 'f':
+        case 'F':
+        case 'g':
+        case 'G':
+        case 'a':
+        case 'A':
+            return true;
+        default:
+            return false;
+    }
+}
+
+}  // namespace internal
+
+#define WPP_NG_SPECIALIZE_LOGGER(RealType, Tag, formatValidationFuncion)                \
+    template<typename Format>                                                           \
     struct TraceItemMaker<RealType, Format,                                             \
-                           std::enable_if_t<formatValidationFuncion(Format::value())>> { \
-        static constexpr auto make(RealType value) {                                     \
-            return Tag{value};                                                           \
-        }                                                                                \
+                          std::enable_if_t<formatValidationFuncion(Format::value())>> { \
+        static constexpr auto make(RealType value) {                                    \
+            return Tag{value};                                                          \
+        }                                                                               \
     }
 
 #define WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(RealType, Tag) \
-    WPP_NG_SPECIALIZE_LOGGER(RealType, Tag, isValidIntegerFormat)
+    WPP_NG_SPECIALIZE_LOGGER(RealType, Tag, internal::isValidIntegerFormat)
 
-
-constexpr bool isValidPointerSizedIntegerFormat(std::string_view format) {
-    return format.size() > 0 && format[0] == 'z' &&
-           isValidIntegerFormat(format.substr(1));
-}
-
-
-struct PtrDiffItem : PODTraceItem<ptrdiff_t> {};
-WPP_NG_SPECIALIZE_LOGGER(ptrdiff_t, PtrDiffItem, isValidPointerSizedIntegerFormat);
-
-struct SizeTItem : PODTraceItem<size_t> {};
-WPP_NG_SPECIALIZE_LOGGER(size_t, SizeTItem, isValidPointerSizedIntegerFormat);
-
-
-struct Int8Item : PODTraceItem<int8_t> {};
+struct Int8Item : TrivialTraceItem<int8_t> {};
 WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(int8_t, Int8Item);
 
-struct Int16Item : PODTraceItem<int16_t> {};
+struct Int16Item : TrivialTraceItem<int16_t> {};
 WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(int16_t, Int16Item);
 
-
-struct Int32Item : PODTraceItem<int32_t> {};
+struct Int32Item : TrivialTraceItem<int32_t> {};
 WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(int32_t, Int32Item);
 
-struct Int64Item : PODTraceItem<int64_t> {};
+struct Int64Item : TrivialTraceItem<int64_t> {};
 WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(int64_t, Int64Item);
 
-struct UInt8Item : PODTraceItem<uint8_t> {};
+struct UInt8Item : TrivialTraceItem<uint8_t> {};
 WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(uint8_t, UInt8Item);
 
-struct UInt16Item : PODTraceItem<uint16_t> {};
+struct UInt16Item : TrivialTraceItem<uint16_t> {};
 WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(uint16_t, UInt16Item);
 
-struct UInt32Item : PODTraceItem<uint32_t> {};
+struct UInt32Item : TrivialTraceItem<uint32_t> {};
 WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(uint32_t, UInt32Item);
 
-struct UInt64Item : PODTraceItem<uint64_t> {};
+struct UInt64Item : TrivialTraceItem<uint64_t> {};
 WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(uint64_t, UInt64Item);
 
-struct ByteItem : PODTraceItem<std::byte> {};
+struct ByteItem : TrivialTraceItem<std::byte> {};
 WPP_NG_SPECIALIZE_INTEGRAL_LOGGER(std::byte, ByteItem);
 
+struct PtrDiffItem : TrivialTraceItem<ptrdiff_t> {};
+WPP_NG_SPECIALIZE_LOGGER(ptrdiff_t, PtrDiffItem, internal::isValidPointerSizedIntegerFormat);
 
-struct GuidItem {
-    constexpr const void* getPtr() const noexcept {
-        return &value;
-    }
+struct SizeTItem : TrivialTraceItem<size_t> {};
+WPP_NG_SPECIALIZE_LOGGER(size_t, SizeTItem, internal::isValidPointerSizedIntegerFormat);
 
-    constexpr size_t getSize() const noexcept {
-        return sizeof(GUID);
-    }
+struct FloatItem : TrivialTraceItem<float> {};
+WPP_NG_SPECIALIZE_LOGGER(float, FloatItem, internal::isValidFloatFormat);
 
-    const GUID& value;
-};
+struct DoubleItem : TrivialTraceItem<double> {};
+WPP_NG_SPECIALIZE_LOGGER(double, DoubleItem, internal::isValidFloatFormat);
 
-template<typename Format>
-struct TraceItemMaker<GUID, Format, std::enable_if_t<Format::size() == 0>> {
+struct LongDoubleItem : TrivialTraceItem<long double> {};
+WPP_NG_SPECIALIZE_LOGGER(long double, LongDoubleItem, internal::isValidFloatFormat);
+
+struct GuidItem : ReferenceTraceItem<GUID> {};
+
+template<>
+struct TraceItemMaker<GUID> {
     static constexpr auto make(const GUID& guid) {
         return GuidItem{guid};
     }
 };
 
-template<typename CharType>
-struct CharTypeItem : PODTraceItem<CharType> {
-    static constexpr bool isValidFormat(std::string_view str) {
-        if (str.size() != 1) {
-            return false;
-        }
-        return PODTraceItem<CharType>::isValidFormat(str) || str[0] == 'c';
-    }
-};
+struct CharItem : TrivialTraceItem<char> {};
+WPP_NG_SPECIALIZE_LOGGER(char, CharItem, internal::isValidCharacterFormat);
 
-constexpr bool isValidCharacterFormat(std::string_view format) {
-    return format == "c" || isValidIntegerFormat(format);
-}
+struct WCharItem : TrivialTraceItem<wchar_t> {};
+WPP_NG_SPECIALIZE_LOGGER(wchar_t, WCharItem, internal::isValidCharacterFormat);
 
-struct CharItem : CharTypeItem<char> {};
-WPP_NG_SPECIALIZE_LOGGER(char, CharItem, isValidCharacterFormat);
-
-struct WCharItem : CharTypeItem<wchar_t> {};
-WPP_NG_SPECIALIZE_LOGGER(wchar_t, WCharItem, isValidCharacterFormat);
-
-struct PointerItem : PODTraceItem<const void*> {};
-
-constexpr bool isValidPointerFormat(std::string_view format) {
-    return format.size() == 0 || format == "p";
-}
+struct PointerItem : TrivialTraceItem<const void*> {};
 
 template<typename T, typename Format>
-struct TraceItemMaker<T*, Format, std::enable_if_t<isValidPointerFormat(Format::value())>> {
+struct TraceItemMaker<T*, Format, std::enable_if_t<internal::isValidPointerFormat(Format::value())>> {
     static constexpr auto make(const T* ptr) {
         return PointerItem{static_cast<const void*>(ptr)};
     }
 };
 
-struct SizeAndDataItem {
-    constexpr SizeAndDataItem(const void* data, uint16_t size) : ptr(data), size(size) {
-    }
-
-    constexpr auto makeTracePairs() const {
-        return std::make_tuple<TracePair, TracePair>({&size, sizeof(size)}, {ptr, size});
-    }
-
-private:
-    const void* const ptr;
-    const uint16_t size;
+struct HexBufferItem : public SizeAndDataTraceItem {
+    using SizeAndDataTraceItem::SizeAndDataTraceItem;
 };
 
-struct HexBufferItem : public SizeAndDataItem {
-    using SizeAndDataItem::SizeAndDataItem;
-};
-
-struct HexDumpItem : public SizeAndDataItem {
-    using SizeAndDataItem::SizeAndDataItem;
+struct HexDumpItem : public SizeAndDataTraceItem {
+    using SizeAndDataTraceItem::SizeAndDataTraceItem;
 };
 
 namespace internal {
 
 template<typename CharType>
-struct StringItemType {
-    explicit constexpr StringItemType(const CharType* const str)
-        : StringItemType(str, sizeof(CharType) * (std::char_traits<CharType>::length(str) + 1)) {
-    }
-
-    explicit constexpr StringItemType(const CharType* const ptr, size_t byteSize)
+struct NullTerminatedStringItemType {
+    explicit constexpr NullTerminatedStringItemType(const CharType* const ptr, size_t byteSize)
         : ptr(ptr), size(byteSize) {
     }
 
@@ -232,131 +255,90 @@ struct StringItemType {
     const size_t size;
 };
 
-template<typename CharType, typename DefaultStringType>
-struct StringTraceItemMaker {
-    static constexpr auto make(const CharType* ptr) {
-        return DefaultStringType(ptr);
-    }
-
-    template<typename Format>
-    static constexpr auto make(const CharType* ptr) {
-        return makeStringType<Format>(ptr);
-    }
-
-    template<typename Format, size_t N>
-    static constexpr auto make(const CharType (&str)[N]) {
-        return makeStringType<Format, N>(str);
-    }
-
-private:
-    template<typename Format, size_t size = -1>
-    static constexpr auto makeStringType(const CharType* str) {
-        constexpr const auto format = Format::value();
-        if constexpr (format == "" || format == "s") {
-            if constexpr (size == -1) {
-                return DefaultStringType(str);
-            } else {
-                return DefaultStringType(str, size * sizeof(CharType));
-            }
-        } else if constexpr (format == "p") {
-            return PointerItem{str};
-        } else if constexpr (format == "x" || format == "xd") {
-            // Don't include null-terminator in hex dumps
-            using ResultType = std::conditional_t<format == "x", HexBufferItem, HexDumpItem>;
-            if constexpr (size == -1) {
-                return ResultType(str,
-                                  static_cast<uint16_t>(std::char_traits<CharType>::length(str) *
-                                                        sizeof(CharType)));
-            } else {
-                return ResultType(str, static_cast<uint16_t>(size - 1) * sizeof(CharType));
-            }
-        } else {
-            return InvalidFormatItem{};
-        }
-    }
-};
-
 }  // namespace internal
 
-struct StringItem : internal::StringItemType<char> {
-    using StringItemType::StringItemType;
+struct StringItem : internal::NullTerminatedStringItemType<char> {
+    using NullTerminatedStringItemType::NullTerminatedStringItemType;
 };
 
-struct WStringItem : internal::StringItemType<wchar_t> {
-    using StringItemType::StringItemType;
+struct WStringItem : internal::NullTerminatedStringItemType<wchar_t> {
+    using NullTerminatedStringItemType::NullTerminatedStringItemType;
 };
 
 template<typename CharType, typename ItemType, bool includeNull = true>
-struct StringTraceItemMaker2 {
+struct StringTraceItemMaker {
     static constexpr auto make(const CharType* const ptr) {
         if constexpr (includeNull) {
             return ItemType(ptr, (std::char_traits<CharType>::length(ptr) + 1) * sizeof(CharType));
         } else {
-            return ItemType(ptr, static_cast<uint16_t>(std::char_traits<CharType>::length(ptr) * sizeof(CharType)));
-        }
-    }
-
-    template<size_t N>
-    static constexpr auto make(const CharType (&str)[N]) {
-        if constexpr (includeNull) {
-            return ItemType(str, sizeof(CharType) * N);
-        } else {
-            return ItemType(str, sizeof(CharType) * (N - 1));
+            return ItemType(ptr, static_cast<uint16_t>(std::char_traits<CharType>::length(ptr) *
+                                                       sizeof(CharType)));
         }
     }
 };
 
-template<>
-struct TraceItemMaker<char*, FormatString<>> : StringTraceItemMaker2<char, StringItem> {};
+// Specialization for null-terminated strings
 
 template<>
-struct TraceItemMaker<char*, FormatString<'s'>> : StringTraceItemMaker2<char, StringItem> {};
+struct TraceItemMaker<char*, FormatString<>> : StringTraceItemMaker<char, StringItem> {};
 
 template<>
-struct TraceItemMaker<char*, FormatString<'x'>> : StringTraceItemMaker2<char, HexBufferItem, false> {};
+struct TraceItemMaker<char*, FormatString<'s'>> : StringTraceItemMaker<char, StringItem> {};
+
+template<>
+struct TraceItemMaker<char*, FormatString<'x'>> : StringTraceItemMaker<char, HexBufferItem, false> {
+};
 
 template<>
 struct TraceItemMaker<char*, FormatString<'x', 'd'>>
-    : StringTraceItemMaker2<char, HexDumpItem, false> {};
-
-
-template<>
-struct TraceItemMaker<wchar_t*, FormatString<>> : StringTraceItemMaker2<wchar_t, WStringItem> {};
+    : StringTraceItemMaker<char, HexDumpItem, false> {};
 
 template<>
-struct TraceItemMaker<wchar_t*, FormatString<'s'>> : StringTraceItemMaker2<wchar_t, WStringItem> {};
+struct TraceItemMaker<wchar_t*, FormatString<>> : StringTraceItemMaker<wchar_t, WStringItem> {};
+
+template<>
+struct TraceItemMaker<wchar_t*, FormatString<'s'>> : StringTraceItemMaker<wchar_t, WStringItem> {};
 
 template<>
 struct TraceItemMaker<wchar_t*, FormatString<'x'>>
-    : StringTraceItemMaker2<wchar_t, HexBufferItem, false> {};
+    : StringTraceItemMaker<wchar_t, HexBufferItem, false> {};
 
 template<>
 struct TraceItemMaker<wchar_t*, FormatString<'x', 'd'>>
-    : StringTraceItemMaker2<wchar_t, HexDumpItem, false> {};
-
+    : StringTraceItemMaker<wchar_t, HexDumpItem, false> {};
 
 }  // namespace wpp
 
 namespace wpp::internal {
 
-template<typename T, typename Arg, typename = void>
-struct HasRegularMake : std::false_type {};
-
-template<typename T, typename Arg>
-struct HasRegularMake<T, Arg, std::void_t<decltype(T::make(std::declval<Arg>()))>>
-    : std::true_type {};
+/**
+ * This struct is used to indicate that the given format is not supported.
+ */
+struct InvalidFormatItem {};
 
 /**
- * Build the matching trace item for the given type and format.
+ * Builds the matching trace item for the given type and format.
  */
 template<typename Format, typename T>
 auto buildTraceItem(T&& t) {
     using MakerType = TraceItemMaker<RecursiveDecay<T>, RecursiveDecay<Format>>;
-    constexpr const auto hasMake2 = HasRegularMake<MakerType, T>::value;
-    if constexpr (!hasMake2) {
+    if constexpr (!HasMakeFunction<MakerType, T>::value) {
         return InvalidFormatItem{};
     } else {
         return MakerType::make(std::forward<T>(t));
+    }
+}
+
+template<typename T>
+constexpr auto makeTracePairs(const T& t) {
+    if constexpr (IsSimpleTraceItem<T>::value) {
+        return std::make_tuple(t.getPtr(), t.getSize());
+    } else if constexpr (IsComplexTraceItem<T>::value) {
+        return std::apply(
+            [](auto&&... args) { return std::tuple_cat(std::make_tuple(args.ptr, args.size)...); },
+            t.makeTracePairs());
+    } else {
+        static_assert(false, "Bad trace item type!");
     }
 }
 

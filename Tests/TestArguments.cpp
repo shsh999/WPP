@@ -58,7 +58,7 @@ TEST_CASE("Argument count", "[Args]") {
                 TraceType>);                                                                     \
     } while (0)
 
-#define CHECK_BAD_FORMAT(str, ArgType) CHECK_TYPE(str, ArgType, wpp::InvalidFormatItem)
+#define CHECK_BAD_FORMAT(str, ArgType) CHECK_TYPE(str, ArgType, wpp::internal::InvalidFormatItem)
 
 TEST_CASE("Argument types", "[Args]") {
     using namespace ::wpp::internal;
@@ -120,5 +120,35 @@ TEST_CASE("Argument types", "[Args]") {
     CHECK_TYPE("{:x}", wchar_t[10], HexBufferItem);
     CHECK_TYPE("{:xd}", wchar_t[10], HexDumpItem);
 
-    CHECK_BAD_FORMAT("{:d}", char*);
+    CHECK_TYPE("{}", GUID, GuidItem);
+    
+    CHECK_TYPE("{}", float, FloatItem);
+    CHECK_TYPE("{:a}", float, FloatItem);
+    CHECK_TYPE("{:A}", float, FloatItem);
+    CHECK_TYPE("{:e}", float, FloatItem);
+    CHECK_TYPE("{:E}", float, FloatItem);
+    CHECK_TYPE("{:f}", float, FloatItem);
+    CHECK_TYPE("{:F}", float, FloatItem);
+    CHECK_TYPE("{:g}", float, FloatItem);
+    CHECK_TYPE("{:G}", float, FloatItem);
+
+    CHECK_TYPE("{}", double, DoubleItem);
+    CHECK_TYPE("{:a}", double, DoubleItem);
+    CHECK_TYPE("{:A}", double, DoubleItem);
+    CHECK_TYPE("{:e}", double, DoubleItem);
+    CHECK_TYPE("{:E}", double, DoubleItem);
+    CHECK_TYPE("{:f}", double, DoubleItem);
+    CHECK_TYPE("{:F}", double, DoubleItem);
+    CHECK_TYPE("{:g}", double, DoubleItem);
+    CHECK_TYPE("{:G}", double, DoubleItem);
+
+    CHECK_TYPE("{}", long double, LongDoubleItem);
+    CHECK_TYPE("{:a}", long double, LongDoubleItem);
+    CHECK_TYPE("{:A}", long double, LongDoubleItem);
+    CHECK_TYPE("{:e}", long double, LongDoubleItem);
+    CHECK_TYPE("{:E}", long double, LongDoubleItem);
+    CHECK_TYPE("{:f}", long double, LongDoubleItem);
+    CHECK_TYPE("{:F}", long double, LongDoubleItem);
+    CHECK_TYPE("{:g}", long double, LongDoubleItem);
+    CHECK_TYPE("{:G}", long double, LongDoubleItem);
 }

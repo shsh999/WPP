@@ -87,3 +87,25 @@ TEST_CASE("ComplexTraceItem", "[TypeTraits]") {
     
     STATIC_REQUIRE_FALSE(IsComplexTraceItem<int>::value);
 }
+
+TEST_CASE("HasMakeFunction", "[TypeTraits]") {
+    using Maker = TraceItemMaker<int, FormatString<>>;
+    
+    // Excat type match
+    STATIC_REQUIRE(HasMakeFunction<Maker, int>::value);
+    // Implicit conversion
+    STATIC_REQUIRE(HasMakeFunction<Maker, char>::value);
+
+    // No implicit conversion
+    STATIC_REQUIRE_FALSE(!HasMakeFunction<Maker, float>::value);
+    // Not a maker class
+    STATIC_REQUIRE_FALSE(HasMakeFunction<int, int>::value);
+}
+
+TEST_CASE("RecursiveDecay", "[TypeTraits]") {
+    STATIC_REQUIRE(std::is_same_v<RecursiveDecay<int>, int>);
+    STATIC_REQUIRE(std::is_same_v<RecursiveDecay<const volatile int&>, int>);
+    STATIC_REQUIRE(std::is_same_v<RecursiveDecay<const volatile int* const&>, int*>);
+    STATIC_REQUIRE(std::is_same_v<RecursiveDecay<volatile int[][10]>, int**>);
+    STATIC_REQUIRE(std::is_same_v<RecursiveDecay<const int * const * const * const * const>, int****>);
+}

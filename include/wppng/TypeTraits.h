@@ -66,9 +66,12 @@ struct RecursiveDecayHelper<T[]> {
 
 }  // namespace helper
 
+/**
+ * Recursively decay a type, removing all const, volatile and reference qualifiers.
+ * For example, `RecursiveDecay<const int* const * const>` yields `int**`.
+ */
 template<typename T>
 using RecursiveDecay = typename helper::RecursiveDecayHelper<T>::type;
-
 
 /**
  * Checks that the given type is a vaild "simple" trace item:
@@ -83,7 +86,6 @@ struct IsSimpleTraceItem<
     T, std::enable_if_t<std::is_same_v<decltype(std::declval<T>().getPtr()), const void*> &&
                         std::is_same_v<decltype(std::declval<T>().getSize()), size_t>>>
     : std::true_type {};
-
 
 template<typename T>
 struct IsTraceTuple : std::false_type {};
@@ -103,6 +105,17 @@ struct IsComplexTraceItem : std::false_type {};
 template<typename T>
 struct IsComplexTraceItem<
     T, std::enable_if_t<IsTraceTuple<decltype(std::declval<T>().makeTracePairs())>::value>>
+    : std::true_type {};
+
+/**
+ * Checks that the given type is a valid TraceItemMaker instantiation: it has a valid make function
+ * taking an argument of the given type.
+ */
+template<typename Maker, typename Arg, typename = void>
+struct HasMakeFunction : std::false_type {};
+
+template<typename Maker, typename Arg>
+struct HasMakeFunction<Maker, Arg, std::void_t<decltype(Maker::make(std::declval<Arg>()))>>
     : std::true_type {};
 
 }  // namespace wpp::internal

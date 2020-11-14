@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <string_view>
 #include <type_traits>
 
 namespace wpp::internal {
@@ -29,7 +30,7 @@ struct ConstexprString : std::array<char, N> {
     }
 
     /**
-     * Concatenate two ConstexprStrings.
+     * Concatenates two ConstexprStrings.
      */
     template<size_t M>
     constexpr ConstexprString<N + M> operator+(const ConstexprString<M>& other) const noexcept {
@@ -84,6 +85,9 @@ private:
     static constexpr const char _value[sizeof...(chars)] = {chars...};
 };
 
+/**
+ * A zero-size specialization, as an array of size 0 is not supported.
+ */
 template<>
 struct FixedConstexprString<> {
     static constexpr const auto value() {
@@ -111,8 +115,8 @@ static auto makeFixedString(std::index_sequence<Ixs...>) {
 }  // namespace wpp::internal
 
 /**
- * Generate a type named `name` whose static `::value()` function returns a string view of the given
- * string literal. `name` must be a valid class name, and `str` must be a string literal.
+ * Generates a type named `name` whose static `::value()` function returns a string view of the
+ * given string literal. `name` must be a valid class name, and `str` must be a string literal.
  */
 #define __WPP_NG_STRING_MAKER(name, str)                                                 \
     static constexpr const auto ___wpp_ng_trace_str_##name = str;                        \

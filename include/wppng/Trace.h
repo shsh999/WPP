@@ -8,18 +8,27 @@
 #include "Md5.h"
 #include "ParseUtils.h"
 
-#define _WPP_NG_MAKE_STRING(...) #__VA_ARGS__
-#define WPP_NG_MAKE_STRING(...) _WPP_NG_MAKE_STRING(__VA_ARGS__)##""
+#define __WPP_NG_MAKE_STRING_IMPL(...) #__VA_ARGS__
+#define __WPP_NG_MAKE_STRING(...) __WPP_NG_MAKE_STRING_IMPL(__VA_ARGS__)##""
 
-#define _WPP_NG_MAKE_WIDE(X) L##X
-#define WPP_NG_MAKE_WIDE(X) _WPP_NG_MAKE_WIDE(X)
-#define WPP_NG_MAKE_WSTRING(...) WPP_NG_MAKE_WIDE(WPP_NG_MAKE_STRING(__VA_ARGS__))
+#define _WPP_NG_MAKE_WIDE_IMPL(X) L##X
+#define __WPP_NG_MAKE_WIDE(X) _WPP_NG_MAKE_WIDE_IMPL(X)
+#define __WPP_NG_MAKE_WSTRING(...) __WPP_NG_MAKE_WIDE(__WPP_NG_MAKE_STRING(__VA_ARGS__))
 
 namespace wpp::internal {
 
+////////////////////////////////
+// Trace argument annotations //
+////////////////////////////////
+
+/**
+ * Annotates the function name, containing the trace hash and the trace item argument types.
+ * This is used to write the argument types to the PDB file, and the hash is required in order
+ * to match the types with the rest of the trace information.
+ */
 template<uint32_t hashA, uint32_t hashB, uint32_t hashC, uint32_t hashD, typename... Args>
 void annotateArgTypes() {
-    __annotation(L"TMF_NG_TYPES:", WPP_NG_MAKE_WIDE(__FUNCSIG__));
+    __annotation(L"TMF_NG_TYPES:", __WPP_NG_MAKE_WIDE(__FUNCSIG__));
 }
 
 template<uint32_t hashA, uint32_t hashB, uint32_t hashC, uint32_t hashD, typename Format,
@@ -37,19 +46,22 @@ struct AnnotateArgsCaller<hashA, hashB, hashC, hashD, Format, std::tuple<Args...
     }
 };
 
-template<typename T, T... values>
-constexpr bool annotateFlags() {
-    __annotation(L"TMF_NG_FLAGS:", WPP_NG_MAKE_WIDE(__FUNCSIG__));
-    return true;
-}
+///////////////////////////////
+// Trace argument validation //
+///////////////////////////////
 
 template<typename Format, typename TupleType>
 struct ArgChecker;
 
 enum class ArgCheckResult { Success, InvalidFormat };
+
+/**
+ * Checks that the format is valid for all the argument types.
+ * This is done by checking that all the generated trace items are not InvalidFormatItem.
+ */
 template<typename... Args>
 constexpr ArgCheckResult makeArgCheckStatus() {
-    if constexpr ((std::is_same_v<Args, wpp::InvalidFormatItem> || ...)) {
+    if constexpr ((std::is_same_v<Args, ::wpp::internal::InvalidFormatItem> || ...)) {
         return ArgCheckResult::InvalidFormat;
     } else {
         return ArgCheckResult::Success;
@@ -65,6 +77,10 @@ struct ArgChecker<Format, std::tuple<Args...>> {
     }
 };
 
+/////////////////////
+// Trace utilities //
+/////////////////////
+
 constexpr GUID md5ToUUID3(const wpp::internal::md5::MD5Sum& sum) {
     return {sum.a,
             static_cast<unsigned short>(sum.b & 0xffff),
@@ -73,13 +89,23 @@ constexpr GUID md5ToUUID3(const wpp::internal::md5::MD5Sum& sum) {
              sum.d & 0xff, (sum.d >> 8) & 0xff, (sum.d >> 16) & 0xff, (sum.d >> 24) & 0xff}};
 }
 
-template<typename Format, UCHAR flag, TraceLevel level, size_t... indices, typename... Args>
-constexpr __forceinline void wppNGTraceNew(std::index_sequence<indices...>, TraceProvider& provider,
-                                           const GUID& traceGuid, Args&&... args) {
+template<typename Format, size_t... indices, typename... Args>
+constexpr __forceinline void wppNGTraceNewInternal(std::index_sequence<indices...>,
+                                                   TraceProvider& provider, const GUID& traceGuid,
+                                                   Args&&... args) {
+    provider.traceMessageFromTraceItems(
+        traceGuid,
+        buildTraceItem<std::tuple_element_t<indices, Format>>(std::forward<Args>(args))...);
+}
+
+/**
+ * Traces only if traces are currently enabled.
+ */
+template<typename Format, UCHAR flag, TraceLevel level, typename... Args>
+constexpr void wppNGTraceNew(TraceProvider& provider, const GUID& traceGuid, Args&&... args) {
     if (provider.areTracesEnabled(flag, level)) {
-        provider.traceMessageFromTraceItems(
-            traceGuid,
-            buildTraceItem<std::tuple_element_t<indices, Format>>(std::forward<Args>(args))...);
+        wppNGTraceNewInternal<Format>(std::make_index_sequence<sizeof...(Args)>{}, provider,
+                                      traceGuid, std::forward<Args>(args)...);
     }
 }
 
@@ -89,6 +115,9 @@ constexpr __forceinline void wppNGTraceNew(std::index_sequence<indices...>, Trac
 // Trace Macros //
 //////////////////
 
+/**
+ * Checks that all the constant-type paramters are correct.
+ */
 #define __WPP_NG_VALIDATE_BASIC_PARAMETERS(provider, flag, level, fmt, ...)                  \
     static_assert(::wpp::internal::IsStringLiteral<decltype(fmt)>,                           \
                   "WPP-NG: The format must be a string literal!");                           \
@@ -100,6 +129,9 @@ constexpr __forceinline void wppNGTraceNew(std::index_sequence<indices...>, Trac
     static_assert(std::is_same_v<std::decay_t<decltype(provider)>, ::wpp::TraceProvider>,    \
                   "WPP-NG: The provider must be a valid TraceProvider!");
 
+/**
+ * Checks that the format parsing was successful, and that it matches the number of arguments
+ */
 #define __WPP_NG_VALIDATE_FORMAT_AND_ARGS(FormatInfo, actualCount, ...)                         \
     if constexpr (FormatInfo::status() != ::wpp::internal::ArgumentParseStatus::Success) {      \
         constexpr const auto ___wpp_ng_status = FormatInfo::status();                           \
@@ -127,35 +159,35 @@ constexpr __forceinline void wppNGTraceNew(std::index_sequence<indices...>, Trac
     }
 
 /**
- * Calculate the trace hash, used to generate the trace message GUID.
+ * Calculates the trace hash, used to generate the trace message GUID.
  */
-#define __WPP_NG_CALCULATE_TRACE_HASH(baseDirectoryIndex, flag, level, fmt, ...)         \
-    ::wpp::internal::md5::md5Sum(                                                        \
-        ::wpp::internal::makeString("TMF_NG:") +                                         \
-        ::wpp::internal::makeString<sizeof(__FILE__) - baseDirectoryIndex - 1>(          \
-            __FILE__ + baseDirectoryIndex) +                                             \
-        ::wpp::internal::makeString(                                                     \
-            WPP_NG_MAKE_STRING(__LINE__) "FUNC=" __FUNCSIG__ "FLAG=" WPP_NG_MAKE_STRING( \
-                flag) "LEVEL=" WPP_NG_MAKE_STRING(level) fmt WPP_NG_MAKE_STRING(__VA_ARGS__)))
+#define __WPP_NG_CALCULATE_TRACE_HASH(baseDirectoryIndex, flag, level, fmt, ...)             \
+    ::wpp::internal::md5::md5Sum(                                                            \
+        ::wpp::internal::makeString("TMF_NG:") +                                             \
+        ::wpp::internal::makeString<sizeof(__FILE__) - baseDirectoryIndex - 1>(              \
+            __FILE__ + baseDirectoryIndex) +                                                 \
+        ::wpp::internal::makeString(                                                         \
+            __WPP_NG_MAKE_STRING(__LINE__) "FUNC=" __FUNCSIG__ "FLAG=" __WPP_NG_MAKE_STRING( \
+                flag) "LEVEL=" __WPP_NG_MAKE_STRING(level) fmt __WPP_NG_MAKE_STRING(__VA_ARGS__)))
 
 /**
- * Annotate the trace information into the PDB file.
+ * Annotates the trace information into the PDB file.
  */
-#define __WPP_NG_ANNOTATE_TRACE_INFO(hash, flag, level, fmt, FormatInfo, ...)                \
-    __annotation(L"TMF_NG:", WPP_NG_MAKE_WIDE(__FILE__), WPP_NG_MAKE_WSTRING(__LINE__),      \
-                 L"FUNC=" WPP_NG_MAKE_WIDE(__FUNCSIG__), L"FLAG=" WPP_NG_MAKE_WSTRING(flag), \
-                 L"LEVEL=" WPP_NG_MAKE_WSTRING(level), WPP_NG_MAKE_WIDE(fmt),                \
-                 WPP_NG_MAKE_WSTRING(__VA_ARGS__));                                          \
-    ::wpp::internal::AnnotateArgsCaller<hash.a, hash.b, hash.c, hash.d,                      \
-                                        decltype(FormatInfo::value()),                       \
-                                        decltype(std::forward_as_tuple(__VA_ARGS__))>{}(     \
+#define __WPP_NG_ANNOTATE_TRACE_INFO(hash, flag, level, fmt, FormatInfo, ...)                    \
+    __annotation(L"TMF_NG:", __WPP_NG_MAKE_WIDE(__FILE__), __WPP_NG_MAKE_WSTRING(__LINE__),      \
+                 L"FUNC=" __WPP_NG_MAKE_WIDE(__FUNCSIG__), L"FLAG=" __WPP_NG_MAKE_WSTRING(flag), \
+                 L"LEVEL=" __WPP_NG_MAKE_WSTRING(level), __WPP_NG_MAKE_WIDE(fmt),                \
+                 __WPP_NG_MAKE_WSTRING(__VA_ARGS__));                                            \
+    ::wpp::internal::AnnotateArgsCaller<hash.a, hash.b, hash.c, hash.d,                          \
+                                        decltype(FormatInfo::value()),                           \
+                                        decltype(std::forward_as_tuple(__VA_ARGS__))>{}(         \
         std::make_index_sequence<FormatInfo::count()>())
 
 /**
  * This is the main tracing macro used by wpp-ng.
  *
  * provider - a TraceProvider
- * flag - a UCHAR with a single bit set
+ * flag - a UCHAR with only a single bit set (a power of 2)
  * level - a wpp::TraceLevel value
  * fmt - a string literal containing the trace format
  * ... - the arguments to trace. The arguments must match the format string.
@@ -175,18 +207,5 @@ constexpr __forceinline void wppNGTraceNew(std::index_sequence<indices...>, Trac
         __WPP_NG_VALIDATE_FORMAT_AND_ARGS(FormatInfo, ___wpp_ng_paramter_count, __VA_ARGS__);     \
         __WPP_NG_ANNOTATE_TRACE_INFO(___wpp_ng_hash, flag, level, fmt, FormatInfo, __VA_ARGS__);  \
         ::wpp::internal::wppNGTraceNew<decltype(FormatInfo::value()), flag, level>(               \
-            std::make_index_sequence<___wpp_ng_paramter_count>(), provider, ___wpp_ng_guid,       \
-            __VA_ARGS__);                                                                         \
+            provider, ___wpp_ng_guid, __VA_ARGS__);                                               \
     } while (0)
-
-/*#define __WPP_NG_DEFINE_FLAGS_INTERNAL(EnumName, _1, _2, _4, _8, _16, _32, _64, _128, ...) \
-    enum class EnumName { _1 = 1, _2 = 2, _4 = 4, _8 = 8, _16 = 16, _32 = 32, _64 = 64, _128 = 128 }
-
-#define __WPP_NG_EXPAND(...) __VA_ARGS__
-
-#define WPP_NG_DEFINE_FLAGS(EnumName, ...)                                                      \
-    __WPP_NG_EXPAND(__WPP_NG_DEFINE_FLAGS_INTERNAL(EnumName, __VA_ARGS__, Unused1, Unused2,     \
-                                                   Unused3, Unused4, Unused5, Unused6, Unused7, \
-                                                   Unused8))
-
-WPP_NG_DEFINE_FLAGS(SomeFlags, First, Second, Third);*/
