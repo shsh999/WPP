@@ -7,24 +7,38 @@
 
 namespace wpp {
 
+/**
+ * The global trace provider.
+ */
 inline std::optional<TraceProvider> g_wppDefaultProvider = std::nullopt;
 
+/**
+ * Initializes the global trace provider with the given GUID.
+ */
 void wppInitTraces(const GUID& controlGuid) {
     g_wppDefaultProvider.emplace(controlGuid);
 }
 
+/**
+ * Destroys the global trace provider.
+ */
 void wppStopTraces() {
     g_wppDefaultProvider.reset();
 }
 
+/**
+ * A RAII guard for the global trace provider.
+ */
 struct WppTraceGuard {
     [[nodiscard]] explicit WppTraceGuard(const GUID& controlGuid) {
         wppInitTraces(controlGuid);
     }
 
+    // Disallow copy operations
     WppTraceGuard(const WppTraceGuard&) = delete;
     WppTraceGuard& operator=(const WppTraceGuard&) = delete;
 
+    // Disallow move operations
     WppTraceGuard(WppTraceGuard&&) = delete;
     WppTraceGuard& operator=(WppTraceGuard&&) = delete;
 
@@ -35,7 +49,11 @@ struct WppTraceGuard {
 
 };  // namespace wpp
 
-#define WPP_TRACE_FLAG_LEVEL(flag, level, fmt, ...)                       \
+//////////////////
+// Trace Macros //
+//////////////////
+
+#define __WPP_TRACE_FLAG_LEVEL(flag, level, fmt, ...)                       \
     do {                                                                  \
         if (::wpp::g_wppDefaultProvider) {                                \
             auto& ___wpp_provider = *::wpp::g_wppDefaultProvider;         \
@@ -44,13 +62,13 @@ struct WppTraceGuard {
     } while (0)
 
 #define WPP_TRACE_INFO(fmt, ...) \
-    WPP_TRACE_FLAG_LEVEL(1, ::wpp::TraceLevel::Information, fmt, __VA_ARGS__)
+    __WPP_TRACE_FLAG_LEVEL(1, ::wpp::TraceLevel::Information, fmt, __VA_ARGS__)
 
 #define WPP_TRACE_ERROR(fmt, ...) \
-    WPP_TRACE_FLAG_LEVEL(1, ::wpp::TraceLevel::Error, fmt, __VA_ARGS__)
+    __WPP_TRACE_FLAG_LEVEL(1, ::wpp::TraceLevel::Error, fmt, __VA_ARGS__)
 
 #define WPP_TRACE_VERBOSE(fmt, ...) \
-    WPP_TRACE_FLAG_LEVEL(1, ::wpp::TraceLevel::Verbose, fmt, __VA_ARGS__)
+    __WPP_TRACE_FLAG_LEVEL(1, ::wpp::TraceLevel::Verbose, fmt, __VA_ARGS__)
 
 #define WPP_TRACE_WARNING(fmt, ...) \
-    WPP_TRACE_FLAG_LEVEL(1, ::wpp::TraceLevel::Warning, fmt, __VA_ARGS__)
+    __WPP_TRACE_FLAG_LEVEL(1, ::wpp::TraceLevel::Warning, fmt, __VA_ARGS__)

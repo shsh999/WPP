@@ -10,8 +10,8 @@ constexpr const GUID CONTROL_GUID{
 #define TRACE_INFO(fmt, ...) WPP_TRACE_INFO(fmt, __VA_ARGS__)
 
 template<typename T>
-constexpr T maxVal() {
-    return (std::numeric_limits<T>::max)();
+constexpr T maxVal() noexcept {
+    return std::numeric_limits<T>::max();
 }
 
 int main() {
@@ -29,9 +29,9 @@ int main() {
     constexpr const uint64_t uint64 = maxVal<uint64_t>() - 1;
     constexpr const size_t size = maxVal<size_t>() - 1;
     constexpr const ptrdiff_t ptrdiff = static_cast<ptrdiff_t>(maxVal<size_t>() - 1);
-    constexpr const float flt = std::numeric_limits<float>::max();
-    constexpr const double dbl = std::numeric_limits<double>::max();
-    constexpr const long double long_dbl = std::numeric_limits<long double>::max();
+    constexpr const float flt = maxVal<float>();
+    constexpr const double dbl = maxVal<double>();
+    constexpr const long double long_dbl = maxVal<long double>();
     TRACE_INFO("Pointer: {} {:p}", ptr, ptr);
     TRACE_INFO("String: {}, {:s}, {:x}, {:xd}", "str", str, str, str);
     TRACE_INFO("WString: {:}, {:s}, {:x}, {:xd}", L"wstr", wstr, wstr, wstr);
