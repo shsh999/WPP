@@ -95,7 +95,7 @@ GUIDs can be traced with an empty specifier, yielding the expected output.
 
 ## How does it work?
 ### Unique trace identifiers
-WPP++ uses a constexpr implementation of MD5 in order to generate a unique trace GUID for each trace. This GUID is later used to 
+WPP++ uses a constexpr implementation of MD5 in order to generate a unique trace GUID for each trace. This GUID is later used to uniquely identify and parse logged messages.
 
 ### "Leaking" data from the compilation process
 Similarily to WPP, WPP++ uses the MSVC `__annotation(...)` intrinsic in order to write the trace information into the generated PDB file.
