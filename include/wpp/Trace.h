@@ -117,14 +117,18 @@ constexpr void wppDoTrace(TraceProvider& provider, const GUID& traceGuid, Args&&
 /**
  * Checks that all the constant-type paramters are correct.
  */
-#define __WPP_VALIDATE_BASIC_PARAMETERS(provider, flag, level, fmt, ...)                           \
-    static_assert(::wpp::internal::IsStringLiteral<decltype(fmt)>,                                 \
-                  "WPP: The format must be a string literal!");                                    \
-    static_assert(std::is_same_v<decltype(level), ::wpp::TraceLevel>,                              \
-                  "WPP: The trace level must be a TraceLevel!");                                   \
-    static_assert(std::is_convertible_v<decltype(flag), UCHAR>, "WPP: The flag must be a UCHAR!"); \
-    static_assert(flag > 0 && (flag & (flag - 1)) == 0, "The flag must be a power of two!");       \
-    static_assert(std::is_same_v<std::decay_t<decltype(provider)>, ::wpp::TraceProvider>,          \
+#define __WPP_VALIDATE_BASIC_PARAMETERS(provider, flag, level, fmt, ...)                     \
+    static_assert(::wpp::internal::IsStringLiteral<decltype(fmt)>,                           \
+                  "WPP: The format must be a string literal!");                              \
+    static_assert(std::is_same_v<decltype(level), ::wpp::TraceLevel>,                        \
+                  "WPP: The trace level must be a TraceLevel!");                             \
+    static_assert(                                                                           \
+        std::is_convertible_v<::wpp::internal::UnderlyingType<decltype(flag)>::type, UCHAR>, \
+        "WPP: The flag must be a UCHAR or convertible to a UCHAR!");                         \
+    static_assert(static_cast<UCHAR>(flag) > 0 &&                                            \
+                      (static_cast<UCHAR>(flag) & (static_cast<UCHAR>(flag) - 1)) == 0,      \
+                  "The flag must be a power of two!");                                       \
+    static_assert(std::is_same_v<std::decay_t<decltype(provider)>, ::wpp::TraceProvider>,    \
                   "WPP: The provider must be a valid TraceProvider!");
 
 /**
@@ -205,6 +209,6 @@ constexpr void wppDoTrace(TraceProvider& provider, const GUID& traceGuid, Args&&
         using FormatInfo = decltype(::wpp::internal::getFormatInfo<FormatType>());                \
         __WPP_VALIDATE_FORMAT_AND_ARGS(FormatInfo, ___wpp_paramter_count, __VA_ARGS__);           \
         __WPP_ANNOTATE_TRACE_INFO(___wpp_hash, flag, level, fmt, FormatInfo, __VA_ARGS__);        \
-        ::wpp::internal::wppDoTrace<decltype(FormatInfo::value()), flag, level>(                  \
-            provider, ___wpp_guid, __VA_ARGS__);                                                  \
+        ::wpp::internal::wppDoTrace<decltype(FormatInfo::value()), static_cast<UCHAR>(flag),      \
+                                    level>(provider, ___wpp_guid, __VA_ARGS__);                   \
     } while (0)

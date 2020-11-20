@@ -11,7 +11,7 @@ TEST_CASE("isStringLiteral", "[TypeTraits]") {
 
     constexpr const auto str = "asd";
     STATIC_REQUIRE_FALSE(IsStringLiteral<decltype(str)>);
-    
+
     STATIC_REQUIRE_FALSE(IsStringLiteral<void>);
     STATIC_REQUIRE_FALSE(IsStringLiteral<int>);
     STATIC_REQUIRE_FALSE(IsStringLiteral<const char*>);
@@ -19,7 +19,6 @@ TEST_CASE("isStringLiteral", "[TypeTraits]") {
 }
 
 TEST_CASE("SimpleTraceItem", "[TypeTraits]") {
-
     struct SimpleTraceItem {
         constexpr const void* getPtr() const noexcept {
             return nullptr;
@@ -39,7 +38,7 @@ TEST_CASE("SimpleTraceItem", "[TypeTraits]") {
             return 0;
         }
     };
-    
+
     // getSize does not return a size_t, but a signed type
     struct NotSimpleSize {
         const void* getPtr() {
@@ -50,17 +49,14 @@ TEST_CASE("SimpleTraceItem", "[TypeTraits]") {
         }
     };
 
-    
-
     STATIC_REQUIRE(IsSimpleTraceItem<SimpleTraceItem>::value);
-    
+
     STATIC_REQUIRE_FALSE(IsSimpleTraceItem<NotSimplePtr>::value);
     STATIC_REQUIRE_FALSE(IsSimpleTraceItem<NotSimpleSize>::value);
     STATIC_REQUIRE_FALSE(IsSimpleTraceItem<int>::value);
 }
 
 TEST_CASE("ComplexTraceItem", "[TypeTraits]") {
-
     struct ComplexTraceItem {
         auto makeTracePairs() {
             return std::make_tuple(wpp::TracePair{nullptr, size_t(5)});
@@ -69,8 +65,9 @@ TEST_CASE("ComplexTraceItem", "[TypeTraits]") {
 
     struct ComplexTraceItemManyItems {
         auto makeTracePairs() {
-            return std::make_tuple(wpp::TracePair{nullptr, size_t(5)}, wpp::TracePair{nullptr, size_t(5)},
-                            wpp::TracePair{nullptr, size_t(5)}, wpp::TracePair{nullptr, size_t(5)});
+            return std::make_tuple(
+                wpp::TracePair{nullptr, size_t(5)}, wpp::TracePair{nullptr, size_t(5)},
+                wpp::TracePair{nullptr, size_t(5)}, wpp::TracePair{nullptr, size_t(5)});
         }
     };
 
@@ -80,17 +77,16 @@ TEST_CASE("ComplexTraceItem", "[TypeTraits]") {
         }
     };
 
-
     STATIC_REQUIRE(IsComplexTraceItem<ComplexTraceItem>::value);
     STATIC_REQUIRE(IsComplexTraceItem<ComplexTraceItemManyItems>::value);
     STATIC_REQUIRE(IsComplexTraceItem<ComplexTraceItemNoItems>::value);
-    
+
     STATIC_REQUIRE_FALSE(IsComplexTraceItem<int>::value);
 }
 
 TEST_CASE("HasMakeFunction", "[TypeTraits]") {
     using Maker = TraceItemMaker<int, FormatString<>>;
-    
+
     // Excat type match
     STATIC_REQUIRE(HasMakeFunction<Maker, int>::value);
     // Implicit conversion
@@ -107,5 +103,21 @@ TEST_CASE("RecursiveDecay", "[TypeTraits]") {
     STATIC_REQUIRE(std::is_same_v<RecursiveDecay<const volatile int&>, int>);
     STATIC_REQUIRE(std::is_same_v<RecursiveDecay<const volatile int* const&>, int*>);
     STATIC_REQUIRE(std::is_same_v<RecursiveDecay<volatile int[][10]>, int**>);
-    STATIC_REQUIRE(std::is_same_v<RecursiveDecay<const int * const * const * const * const>, int****>);
+    STATIC_REQUIRE(std::is_same_v<RecursiveDecay<const int* const* const* const* const>, int****>);
+}
+
+TEST_CASE("UnderlyingType", "[TypeTraits]") {
+    // Primitive type
+    STATIC_REQUIRE(std::is_same_v<UnderlyingType<int>::type, int>);
+    
+    // Scoped enumerator
+    enum class Int : int {};
+    STATIC_REQUIRE(std::is_same_v<UnderlyingType<Int>::type, int>);
+
+    enum class Uchar : unsigned char {};
+    STATIC_REQUIRE(std::is_same_v<UnderlyingType<Uchar>::type, unsigned char>);
+
+    // Regular enumerator
+    enum Int64 : int64_t {};
+    STATIC_REQUIRE(std::is_same_v<UnderlyingType<Int64>::type, int64_t>);
 }

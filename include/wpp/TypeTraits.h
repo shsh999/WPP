@@ -118,4 +118,17 @@ template<typename Maker, typename Arg>
 struct HasMakeFunction<Maker, Arg, std::void_t<decltype(Maker::make(std::declval<Arg>()))>>
     : std::true_type {};
 
+/**
+ * Gets the underlying type of an enumerator, and the original type for any other type.
+ */
+template<typename T, typename Enable = void>
+struct UnderlyingType {
+    using type = T;
+};
+
+template<typename T>
+struct UnderlyingType<T, std::enable_if_t<std::is_enum_v<T>>> {
+    using type = std::underlying_type_t<T>;
+};
+
 }  // namespace wpp::internal

@@ -14,7 +14,9 @@ class TraceInfo(object):
         self.guid = guid
         self.file, self.line, func, flag, level, self.format, self.args = general_info
         self.func = func[len('FUNC='):]
-        self.flag = int(flag[len('FLAG='):])
+        self.flag = flag[len('FLAG='):]
+        if self.flag.isdigit():
+            self.flag = 'WPP_FLAG_' + self.flag
         self.level = level.split('TraceLevel::')[-1]
         self.arg_types = tuple(make_trace_item_from_name(t) for t in types_info)
     
